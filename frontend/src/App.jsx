@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import Register from "./components/Register";
 import "./App.css";
 
-const API = "http://127.0.0.1:5000/api";
+const API = "https://whatsapp-bulk-message-tyyy.onrender.com/api";
 
 const chartData = [
   { day: "Apr 20", recipients: 800, sent: 700 },
