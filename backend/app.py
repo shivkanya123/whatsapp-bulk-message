@@ -642,6 +642,9 @@ def delete_template(template_id):
 
 # ================= DATABASE ANALYTICS =================
 
+
+# ================= DATABASE ANALYTICS =================
+
 @app.route("/api/stats", methods=["GET"])
 def get_stats():
     connection = None
@@ -651,30 +654,27 @@ def get_stats():
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
 
+        # Dashboard statistics from campaigns table
         cursor.execute("""
             SELECT
                 COUNT(*) AS total_campaigns,
-                COALESCE(SUM(total_recipients), 0) AS total_recipients
+                COALESCE(SUM(total_recipients), 0)
+                    AS total_recipients
             FROM campaigns
         """)
 
         stats = cursor.fetchone()
 
-        cursor.execute("SELECT COUNT(*) AS total_contacts FROM contacts")
-        contacts = cursor.fetchone()
-
+        # Recent campaign activity
         cursor.execute("""
-            SELECT COUNT(*) AS total_templates
-            FROM message_templates
-        """)
-        templates = cursor.fetchone()
-
-        cursor.execute("""
-            SELECT DATE(created_at) AS campaign_date,
-                   COUNT(*) AS campaigns,
-                   COALESCE(SUM(total_recipients), 0) AS recipients
+            SELECT
+                DATE(created_at) AS campaign_date,
+                COUNT(*) AS campaigns,
+                COALESCE(SUM(total_recipients), 0) AS recipients
             FROM campaigns
-            WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+            WHERE created_at >= DATE_SUB(
+                CURDATE(), INTERVAL 6 DAY
+            )
             GROUP BY DATE(created_at)
             ORDER BY campaign_date
         """)
@@ -682,7 +682,11 @@ def get_stats():
         daily_stats = cursor.fetchall()
 
         for item in daily_stats:
-            item["campaign_date"] = item["campaign_date"].strftime("%Y-%m-%d")
+            if item["campaign_date"]:
+                item["campaign_date"] = item[
+                    "campaign_date"
+                ].strftime("%Y-%m-%d")
+
             item["campaigns"] = int(item["campaigns"])
             item["recipients"] = int(item["recipients"])
 
@@ -690,22 +694,27 @@ def get_stats():
             "total_campaigns": int(stats["total_campaigns"]),
             "total_recipients": int(stats["total_recipients"]),
             "messages_sent": 0,
-            "total_contacts": int(contacts["total_contacts"]),
-            "total_templates": int(templates["total_templates"]),
+            "total_contacts": 0,
+            "total_templates": 0,
             "daily_stats": daily_stats,
-            "note": "Messages are prepared only; actual WhatsApp delivery is not connected."
-        })
+            "note": (
+                "Demo mode: actual WhatsApp delivery "
+                "is not connected."
+            )
+        }), 200
 
     except Exception:
         app.logger.exception("Get stats error")
-        return jsonify({"error": "Failed to fetch statistics."}), 500
+        return jsonify({
+            "error": "Failed to fetch statistics."
+        }), 500
 
     finally:
         if cursor:
             cursor.close()
+
         if connection and connection.is_connected():
             connection.close()
-
 
 # ================= RUN SERVER =================
 
