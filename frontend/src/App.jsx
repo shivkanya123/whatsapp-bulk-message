@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Register from "./components/Register";
+import Login from "./components/Login";
 import "./App.css";
 
 const API = "https://whatsapp-bulk-message-tyyy.onrender.com/api";
@@ -19,6 +20,9 @@ function App() {
   const [showRegister, setShowRegister] = useState(() => {
     return localStorage.getItem("isRegistered") !== "true";
   });
+  const [showLogin, setShowLogin] = useState(
+  () => localStorage.getItem("isRegistered") === "true"
+);
 
   const [numbers, setNumbers] = useState("");
   const [message, setMessage] = useState("");
@@ -122,16 +126,24 @@ function App() {
     }
   }, [showRegister, fetchCampaigns, fetchStats]);
 
-  const handleRegisterSuccess = () => {
-    localStorage.setItem("isRegistered", "true");
-    setShowRegister(false);
-  };
+ const handleRegisterSuccess = () => {
+  localStorage.setItem("isRegistered", "true");
+  setShowRegister(false);
+  setShowLogin(true);
+};
 
-  const handleLogout = () => {
-    localStorage.removeItem("isRegistered");
-    setShowRegister(true);
-    setProfileOpen(false);
-  };
+const handleLoginSuccess = () => {
+  localStorage.setItem("isLoggedIn", "true");
+  setShowLogin(false);
+  setShowRegister(false);
+};
+
+ const handleLogout = () => {
+  localStorage.removeItem("isLoggedIn");
+  setShowLogin(true);
+  setShowRegister(false);
+  setProfileOpen(false);
+};
 
   const goTo = (id) => {
     setActiveNav(id);
@@ -252,13 +264,32 @@ function App() {
   };
 
   if (showRegister) {
-    return (
-      <div className="register-page">
-        <Register onRegisterSuccess={handleRegisterSuccess} />
-      </div>
-    );
-  }
+  return (
+    <div className="register-page">
+      <Register
+        onRegisterSuccess={handleRegisterSuccess}
+        onLoginClick={() => {
+          setShowRegister(false);
+          setShowLogin(true);
+        }}
+      />
+    </div>
+  );
+}
 
+if (showLogin) {
+  return (
+    <div className="login-page">
+      <Login
+        onLoginSuccess={handleLoginSuccess}
+        onRegisterClick={() => {
+          setShowLogin(false);
+          setShowRegister(true);
+        }}
+      />
+    </div>
+  );
+}
   const successRate =
     stats.total_recipients > 0
       ? (
